@@ -1,0 +1,8 @@
+<resources>
+    <dimen name="calendar_item_width">60dp</dimen>
+    <dimen name="calendar_item_height">88dp</dimen>
+    <dimen name="calendar_circle_size">48dp</dimen>
+    <dimen name="calendar_weekletter_text">12sp</dimen>
+    <dimen name="calendar_weekday_text">13sp</dimen>
+    <dimen name="calendar_day_text">18sp</dimen>
+</resources>

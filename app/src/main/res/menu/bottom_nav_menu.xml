@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/nav_today"
+        android:title="Сегодня"
+        android:icon="@drawable/ic_today" />
+
+    <item
+        android:id="@+id/nav_med"
+        android:title="Лекарства"
+        android:icon="@drawable/ic_pill" />
+
+    <item
+        android:id="@+id/nav_history"
+        android:title="История"
+        android:icon="@drawable/ic_history" />
+
+</menu>

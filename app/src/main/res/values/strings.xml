@@ -1,0 +1,19 @@
+<resources>
+    <!-- Уже существующие строки -->
+    <string name="app_name">Pills</string>
+    <string name="drug_name_hint">Название лекарства</string>
+    <string name="dosage_hint">Дозировка (например, 500 мг)</string>
+    <string name="description_hint">Описание (необязательно)</string>
+    <string name="select_time">Выбрать время</string>
+    <string name="select_date">Выбрать дату</string>
+    <string name="today">Сегодня</string>
+    <string name="save">Сохранить</string>
+    <string name="accept">Принято</string>
+    <string name="skip">Пропущено</string>
+    <string name="edit">Редактировать</string>
+    <string name="cancel">Отмена</string>
+    <string name="take_medication">Принять лекарство</string>
+
+    <string name="add_pill_description">Добавить лекарство</string>
+    <string name="snooze">Отложить</string>
+</resources>
