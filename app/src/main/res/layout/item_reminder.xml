@@ -6,28 +6,34 @@
 
     <TextView
         android:id="@+id/tvTime"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:layout_alignParentStart="true"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:text="14:30"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/black" />
 
     <TextView
         android:id="@+id/tvName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_below="@id/tvTime"
         android:layout_alignParentStart="true"
         android:layout_marginTop="4dp"
+        android:text="Парацетамол 500мг"
         android:textSize="16sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:textColor="@android:color/darker_gray"
+        android:maxLines="2" />
 
     <ImageButton
         android:id="@+id/btnMore"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_alignParentEnd="true"
         android:src="@android:drawable/ic_menu_more"
         android:background="?attr/selectableItemBackgroundBorderless"
-        android:contentDescription="Меню"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:contentDescription="Действия"
+        android:layout_alignParentTop="true" />
 
 </RelativeLayout>

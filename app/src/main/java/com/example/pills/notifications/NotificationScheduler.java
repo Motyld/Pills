@@ -7,82 +7,72 @@ import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
 
-import java.util.Calendar;
-import java.util.List;
+import com.example.pills.db.DatabaseHelper;
 
 public class NotificationScheduler {
 
-    private static final String TAG = "NotificationScheduler";
+    public static void scheduleOneTime(
+            Context context,
+            String title,
+            long triggerTimestamp,
+            long reminderId
+    ) {
+        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (am == null) return;
 
-    public static void scheduleOneTime(Context ctx, String title, int hour, int minute, long reminderId) {
-        if (!canScheduleExactAlarms(ctx)) {
-            Log.d(TAG, "Cannot schedule exact alarms!");
-            return;
+        int requestCode = (int) (reminderId % Integer.MAX_VALUE);
+
+        // ❗ Отменяем старый
+        Intent cancelIntent = new Intent(context, AlarmReceiver.class);
+        PendingIntent cancelPi = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                cancelIntent,
+                PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        if (cancelPi != null) {
+            am.cancel(cancelPi);
+            cancelPi.cancel();
+            Log.d("Scheduler", "🛑 Old alarm cancelled ID=" + reminderId);
         }
 
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.HOUR_OF_DAY, hour);
-        cal.set(Calendar.MINUTE, minute);
-        cal.set(Calendar.SECOND, 0);
+        // Получаем дозу сразу из базы
+        DatabaseHelper db = new DatabaseHelper(context);
+        String dose = db.getDrugDosageByName(title);
 
-        if (cal.getTimeInMillis() < System.currentTimeMillis()) {
-            cal.add(Calendar.DAY_OF_YEAR, 1);
-        }
-
-        schedule(ctx, title, cal.getTimeInMillis(), reminderId);
-    }
-
-    public static void scheduleRepeating(Context ctx, String title, int hour, int minute, List<Integer> days, long reminderId) {
-        if (!canScheduleExactAlarms(ctx)) {
-            Log.d(TAG, "Cannot schedule exact alarms!");
-            return;
-        }
-
-        for (int day : days) {
-            Calendar cal = Calendar.getInstance();
-            cal.set(Calendar.DAY_OF_WEEK, day);
-            cal.set(Calendar.HOUR_OF_DAY, hour);
-            cal.set(Calendar.MINUTE, minute);
-            cal.set(Calendar.SECOND, 0);
-
-            if (cal.getTimeInMillis() < System.currentTimeMillis()) {
-                cal.add(Calendar.WEEK_OF_YEAR, 1);
-            }
-
-            schedule(ctx, title, cal.getTimeInMillis(), reminderId + day);
-        }
-    }
-
-    private static void schedule(Context ctx, String title, long timeInMillis, long requestCode) {
-        Intent intent = new Intent(ctx, AlarmReceiver.class);
+        Intent intent = new Intent(context, AlarmReceiver.class);
         intent.putExtra("title", title);
-        intent.putExtra("reminderId", requestCode);
+        intent.putExtra("reminderId", reminderId);
+        intent.putExtra("timestamp", triggerTimestamp);
+        intent.putExtra("dose", dose); // передаем дозу
 
         PendingIntent pi = PendingIntent.getBroadcast(
-                ctx,
-                (int) requestCode,
+                context,
+                requestCode,
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
-        if (am == null) return;
+        if (triggerTimestamp <= System.currentTimeMillis()) {
+            Log.d("Scheduler", "⛔ Timestamp in past, skip");
+            return;
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, timeInMillis, pi);
+            am.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTimestamp,
+                    pi
+            );
         } else {
-            am.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pi);
+            am.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTimestamp,
+                    pi
+            );
         }
 
-        Log.d(TAG, "Scheduled: " + title + " at " + timeInMillis + " req=" + requestCode);
-    }
-
-    // Проверка точных будильников
-    public static boolean canScheduleExactAlarms(Context ctx) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
-            return am != null && am.canScheduleExactAlarms();
-        }
-        return true;
+        Log.d("Scheduler", "✅ Alarm scheduled ID=" + reminderId + " ts=" + triggerTimestamp);
     }
 }

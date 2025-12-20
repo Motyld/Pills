@@ -1,5 +1,6 @@
 package com.example.pills.notifications;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -11,53 +12,74 @@ import android.os.Build;
 import androidx.core.app.NotificationCompat;
 
 import com.example.pills.R;
+import com.example.pills.db.DatabaseHelper;
 import com.example.pills.ui.popup.ReminderPopupActivity;
 
 public class AlarmReceiver extends BroadcastReceiver {
 
     private static final String CHANNEL_ID = "pill_reminders";
-    private static final String CHANNEL_NAME = "Medication Reminders";
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        String title = intent.getStringExtra("title");
+
         long reminderId = intent.getLongExtra("reminderId", -1);
+        String title = intent.getStringExtra("title");
+        long timestamp = intent.getLongExtra("timestamp", 0);
 
-        createChannelIfNeeded(context);
+        // Получаем дозу сразу
+        DatabaseHelper db = new DatabaseHelper(context);
+        String dose = db.getDrugDosageByName(title);
 
-        Intent popup = new Intent(context, ReminderPopupActivity.class);
-        popup.putExtra("title", title);
-        popup.putExtra("reminderId", reminderId);
-        popup.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        int notificationId = (int) (reminderId % Integer.MAX_VALUE);
 
-        PendingIntent fullScreenIntent = PendingIntent.getActivity(
+        createChannel(context);
+
+        Intent popupIntent = new Intent(context, ReminderPopupActivity.class);
+        popupIntent.putExtra("reminderId", reminderId);
+        popupIntent.putExtra("title", title);
+        popupIntent.putExtra("timestamp", timestamp);
+        popupIntent.putExtra("dose", dose);  // передаем дозу
+        popupIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        PendingIntent pi = PendingIntent.getActivity(
                 context,
-                (int) reminderId,
-                popup,
+                notificationId,
+                popupIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        NotificationCompat.Builder nb = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_pill)
-                .setContentTitle(title != null ? title : context.getString(R.string.app_name))
-                .setContentText(context.getString(R.string.take_medication))
+        Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_pill)
+                .setContentTitle(title)
+                .setContentText("Приём лекарства")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setContentIntent(pi)
                 .setAutoCancel(true)
-                .setFullScreenIntent(fullScreenIntent, true);
+                .build();
 
-        NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        if (nm != null) nm.notify((int) reminderId, nb.build());
+        NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (nm != null) {
+            nm.notify(notificationId, notification);
+        }
     }
 
-    private void createChannelIfNeeded(Context ctx) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel ch = new NotificationChannel(
-                    CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
-            );
-            ch.setDescription("Medication reminders");
-            NotificationManager nm = ctx.getSystemService(NotificationManager.class);
-            if (nm != null) nm.createNotificationChannel(ch);
-        }
+    private void createChannel(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+
+        NotificationManager nm =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+        if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
+
+        NotificationChannel ch = new NotificationChannel(
+                CHANNEL_ID,
+                "Medication reminders",
+                NotificationManager.IMPORTANCE_HIGH
+        );
+        ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        nm.createNotificationChannel(ch);
     }
 }

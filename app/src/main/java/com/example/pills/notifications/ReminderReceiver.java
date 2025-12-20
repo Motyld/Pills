@@ -8,10 +8,10 @@ import android.widget.Toast;
 public class ReminderReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        // Здесь можно показать уведомление или запустить Activity
         String drugName = intent.getStringExtra("drugName");
         Toast.makeText(context, "Напоминание: " + drugName, Toast.LENGTH_LONG).show();
 
-        // TODO: вызвать NotificationManager для создания уведомления
+        // Здесь можно вызвать NotificationManager для создания уведомления,
+        // либо запуск AlarmReceiver через Intent
     }
 }

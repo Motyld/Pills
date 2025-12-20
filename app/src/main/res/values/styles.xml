@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Основная тема приложения -->
+    <style name="Theme.Pills" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">@color/white</item>
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowFullscreen">false</item>
+    </style>
+
+    <!-- Тема для всплывающего окна -->
+    <style name="Theme.PillsApp.Popup" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:windowIsFloating">true</item>
+    </style>
+
+    <!-- Прочие стили (пример) -->
     <style name="Fab.Rounded" parent="ShapeAppearance.MaterialComponents.LargeComponent">
         <item name="cornerSize">50%</item>
     </style>
+
     <style name="BottomNavTextActive" parent="TextAppearance.AppCompat.Caption">
         <item name="android:textSize">12sp</item>
     </style>
@@ -11,12 +29,5 @@
     <style name="BottomNavTextInactive" parent="TextAppearance.AppCompat.Caption">
         <item name="android:textSize">12sp</item>
     </style>
-    <style name="FullscreenDialogTheme" parent="Theme.MaterialComponents.DayNight.Dialog">
-        <item name="android:windowIsTranslucent">false</item>
-        <item name="android:windowFullscreen">true</item>
-        <item name="android:windowIsFloating">true</item>
-    </style>
-
-
 
 </resources>

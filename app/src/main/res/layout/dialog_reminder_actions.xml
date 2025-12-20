@@ -1,34 +1,97 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="16dp"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
 
-    <Button
+    <!-- Принял -->
+    <LinearLayout
         android:id="@+id/actionAccept"
-        android:text="Принято"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="?attr/selectableItemBackground">
 
-    <Button
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Принял"
+            android:textColor="@android:color/holo_green_dark"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- Пропустил -->
+    <LinearLayout
         android:id="@+id/actionSkip"
-        android:text="Пропущено"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"/>
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="?attr/selectableItemBackground">
 
-    <Button
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Пропустил"
+            android:textColor="@android:color/holo_orange_dark"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- НОВАЯ КНОПКА: Удалить только сегодня -->
+    <LinearLayout
+        android:id="@+id/actionDeleteToday"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="?attr/selectableItemBackground">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Удалить только сегодня"
+            android:textColor="@android:color/holo_red_dark"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- Редактировать -->
+    <LinearLayout
         android:id="@+id/actionEdit"
-        android:text="Редактировать"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"/>
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="?attr/selectableItemBackground">
 
-    <Button
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Редактировать"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+    <!-- Отмена -->
+    <LinearLayout
         android:id="@+id/actionCancel"
-        android:text="Отмена"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"/>
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="?attr/selectableItemBackground">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Отмена"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="16sp" />
+    </LinearLayout>
+
 </LinearLayout>

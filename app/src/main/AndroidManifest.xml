@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Разрешения -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -20,28 +19,23 @@
         android:theme="@style/Theme.Pills">
 
         <!-- AlarmReceiver -->
-        <receiver
-            android:name=".notifications.AlarmReceiver"
-            android:exported="true"/>
+        <receiver android:name=".notifications.AlarmReceiver" android:exported="false" />
 
-        <!-- Срабатывает после перезапуска устройства -->
-        <receiver
-            android:name=".notifications.BootReceiver"
-            android:exported="true">
+        <!-- BootReceiver -->
+        <receiver android:name=".notifications.BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
             </intent-filter>
         </receiver>
 
-        <!-- Экраны приложения -->
+        <!-- Основные экраны -->
         <activity android:name=".ui.auth.LoginActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
         <activity android:name=".ui.auth.RegisterActivity"/>
         <activity android:name=".ui.main.MainActivity"/>
         <activity android:name=".ui.main.AddMedicationActivity"/>
@@ -49,10 +43,16 @@
         <!-- Popup окно -->
         <activity
             android:name=".ui.popup.ReminderPopupActivity"
-            android:theme="@style/FullscreenDialogTheme"
-            android:exported="true"
-            android:showWhenLocked="true"
-            android:turnScreenOn="true"
-            android:excludeFromRecents="true"/>
+            android:theme="@style/Theme.AppCompat.Dialog"
+            android:windowSoftInputMode="stateHidden"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:launchMode="singleTask"
+            android:finishOnTaskLaunch="true"
+            android:exported="false" />
+
+
+
     </application>
+
 </manifest>

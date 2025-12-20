@@ -24,13 +24,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
+    <!-- В item_history.xml -->
     <TextView
         android:id="@+id/historyStatus"
-        android:text="Taken"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:layout_marginTop="6dp"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="@android:color/holo_green_dark" />
+
+
+
 
 </LinearLayout>

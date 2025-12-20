@@ -5,60 +5,59 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.example.pills.db.DatabaseHelper;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class BootReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        if (intent.getAction() == null) return;
+        if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction())) return;
 
-        if (!intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED) &&
-                !intent.getAction().equals(Intent.ACTION_MY_PACKAGE_REPLACED)) {
-            return;
-        }
+        Log.d("BootReceiver", "🔁 BOOT_COMPLETED → restoring alarms");
 
-        DatabaseHelper dbh = new DatabaseHelper(context);
-        SQLiteDatabase rdb = dbh.getReadableDatabase();
+        DatabaseHelper dbHelper = new DatabaseHelper(context);
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        Cursor c = rdb.rawQuery(
-                "SELECT id, time, days, status FROM reminders WHERE status IS NULL OR status='none'",
-                null
+        /*
+         * Берём ТОЛЬКО:
+         *  - pending
+         *  - с timestamp в будущем
+         */
+        Cursor cursor = db.rawQuery(
+                "SELECT r.id, r.timestamp, d.name " +
+                        "FROM reminders r " +
+                        "JOIN drugs d ON d.id = r.drug_id " +
+                        "WHERE r.status = 'pending' AND r.timestamp > ?",
+                new String[]{String.valueOf(System.currentTimeMillis())}
         );
 
-        while (c.moveToNext()) {
+        int restored = 0;
 
-            long id = c.getLong(c.getColumnIndexOrThrow("id"));
-            String time = c.getString(c.getColumnIndexOrThrow("time"));
-            String daysStr = c.getString(c.getColumnIndexOrThrow("days"));
+        while (cursor.moveToNext()) {
+            long reminderId = cursor.getLong(0);
+            long timestamp = cursor.getLong(1);
+            String drugName = cursor.getString(2);
 
-            if (time == null || !time.contains(":")) continue;
+            NotificationScheduler.scheduleOneTime(
+                    context,
+                    drugName,
+                    timestamp,
+                    reminderId
+            );
 
-            String[] parts = time.split(":");
-            int hour = Integer.parseInt(parts[0]);
-            int minute = Integer.parseInt(parts[1]);
-
-            List<Integer> days = new ArrayList<>();
-            if (daysStr != null && daysStr.length() > 2) {
-                daysStr = daysStr.replace("[", "").replace("]", "");
-                for (String d : daysStr.split(",")) {
-                    try { days.add(Integer.parseInt(d.trim())); } catch (Exception ignored) {}
-                }
-            }
-
-            if (!days.isEmpty()) {
-                NotificationScheduler.scheduleRepeating(context, "Напоминание", hour, minute, days, id);
-            } else {
-                NotificationScheduler.scheduleOneTime(context, "Напоминание", hour, minute, id);
-            }
+            restored++;
+            Log.d("BootReceiver",
+                    "✅ Restored alarm ID=" + reminderId +
+                            " at " + timestamp);
         }
 
-        c.close();
-        rdb.close();
+        cursor.close();
+        db.close();
+        dbHelper.close();
+
+        Log.d("BootReceiver", "✅ Total restored: " + restored);
     }
 }

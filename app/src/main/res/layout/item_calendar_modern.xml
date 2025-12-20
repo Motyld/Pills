@@ -4,12 +4,14 @@
     android:layout_width="60dp"
     android:layout_height="80dp"
     android:orientation="vertical"
-    android:gravity="center_horizontal"
-    android:paddingTop="4dp">
+    android:gravity="center"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
 
+    <!-- День недели (Пн, Вт ...) -->
     <TextView
         android:id="@+id/tvWeekDay"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Пн"
         android:textStyle="bold"
@@ -17,31 +19,34 @@
         android:gravity="center"
         android:includeFontPadding="false"
         android:textColor="#6E6E6E"
-        android:layout_marginBottom="6dp" />
+        android:layout_marginBottom="6dp"/>
 
+    <!-- Число дня с фоном выбранного дня -->
     <FrameLayout
         android:layout_width="45dp"
         android:layout_height="45dp"
         android:gravity="center">
 
+        <!-- Фон выбранного дня -->
         <View
             android:id="@+id/bgSelected"
-            android:layout_width="45dp"
-            android:layout_height="45dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:background="@drawable/bg_day_selected"
-            android:visibility="invisible" />
+            android:visibility="invisible"/>
 
+        <!-- Число дня -->
         <TextView
             android:id="@+id/tvDayNumber"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
             android:text="12"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:includeFontPadding="false"
             android:gravity="center"
-            android:textColor="@android:color/black" />
-
+            android:includeFontPadding="false"
+            android:textColor="@android:color/black"/>
     </FrameLayout>
 
 </LinearLayout>

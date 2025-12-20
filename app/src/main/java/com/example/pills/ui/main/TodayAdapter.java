@@ -1,62 +1,50 @@
 package com.example.pills.ui.main;
 
-import android.content.ContentValues;
-import android.database.sqlite.SQLiteDatabase;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.pills.R;
-import com.example.pills.db.DatabaseHelper;
 
-import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-public class TodayAdapter extends RecyclerView.Adapter<TodayAdapter.VH> {
+public class TodayAdapter extends RecyclerView.Adapter<TodayAdapter.ViewHolder> {
 
-    private final ArrayList<TodayItem> items;
-    private final DatabaseHelper db;
+    private final List<TodayItem> items;
+    private final OnItemClickListener listener;
 
-    public TodayAdapter(ArrayList<TodayItem> items, DatabaseHelper db) {
+    public interface OnItemClickListener {
+        void onItemClick(TodayItem item);
+    }
+
+
+    public TodayAdapter(List<TodayItem> items, OnItemClickListener listener) {
         this.items = items;
-        this.db = db;
+        this.listener = listener;
     }
 
     @NonNull
     @Override
-    public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.today_item, parent, false);
-        return new VH(v);
+        return new ViewHolder(v);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull VH h, int pos) {
-        TodayItem it = items.get(pos);
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        TodayItem item = items.get(position);
+        holder.tvTime.setText(item.time);
+        holder.tvName.setText(item.drugName);
 
-        h.title.setText(it.name);
-        h.dosage.setText(it.dosage);
-        h.time.setText(it.time);
-
-        h.btnTaken.setOnClickListener(v -> updateStatus(it, pos, "taken"));
-        h.btnMissed.setOnClickListener(v -> updateStatus(it, pos, "missed"));
-    }
-
-    private void updateStatus(TodayItem item, int position, String status) {
-        SQLiteDatabase wdb = db.getWritableDatabase();
-
-        ContentValues cv = new ContentValues();
-        cv.put("status", status);
-
-        // Обновляем по id напоминания (самый безопасный вариант)
-        wdb.update("reminders", cv, "id = ?", new String[]{String.valueOf(item.reminderId)});
-
-        // удалим из списка и уведомим адаптер
-        items.remove(position);
-        notifyItemRemoved(position);
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) listener.onItemClick(item);
+        });
     }
 
     @Override
@@ -64,17 +52,34 @@ public class TodayAdapter extends RecyclerView.Adapter<TodayAdapter.VH> {
         return items.size();
     }
 
-    static class VH extends RecyclerView.ViewHolder {
-        TextView title, dosage, time;
-        ImageView btnTaken, btnMissed;
+    public void refreshList(List<TodayItem> newItems) {
+        items.clear();
+        items.addAll(newItems);
+        notifyDataSetChanged();
+    }
 
-        public VH(@NonNull View v) {
-            super(v);
-            title = v.findViewById(R.id.medTitle);
-            dosage = v.findViewById(R.id.medDosage);
-            time = v.findViewById(R.id.medTime);
-            btnTaken = v.findViewById(R.id.btnTaken);
-            btnMissed = v.findViewById(R.id.btnMissed);
+    // Удаляет напоминание по id и дате
+    public void removeByIdAndDate(long id, String date) {
+        Iterator<TodayItem> iterator = items.iterator();
+        boolean removed = false;
+        while (iterator.hasNext()) {
+            TodayItem item = iterator.next();
+            if (item.id == id && date.equals(item.date)) {
+                iterator.remove();
+                removed = true;
+                break;
+            }
+        }
+        if (removed) notifyDataSetChanged();
+    }
+
+    static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView tvTime, tvName;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            tvTime = itemView.findViewById(R.id.tvTime);
+            tvName = itemView.findViewById(R.id.tvName);
         }
     }
 }

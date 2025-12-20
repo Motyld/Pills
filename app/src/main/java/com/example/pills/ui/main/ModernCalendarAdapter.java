@@ -38,15 +38,20 @@ public class ModernCalendarAdapter extends RecyclerView.Adapter<ModernCalendarAd
     public DayViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_calendar_modern, parent, false);
+
+        // Задаем фиксированную ширину, чтобы буквы и числа выравнивались
+        RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) v.getLayoutParams();
+        lp.width = (int) (60 * parent.getContext().getResources().getDisplayMetrics().density);
+        v.setLayoutParams(lp);
+
         return new DayViewHolder(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull DayViewHolder holder, int position) {
-
         Date date = dates.get(position);
 
-        holder.tvWeekDay.setText(formatWeek.format(date));
+        holder.tvWeekDay.setText(formatWeek.format(date).replace(".", "")); // убираем точку, если есть
         holder.tvDayNumber.setText(formatDay.format(date));
 
         boolean isSelected = position == selectedPosition;
@@ -56,13 +61,16 @@ public class ModernCalendarAdapter extends RecyclerView.Adapter<ModernCalendarAd
         holder.tvWeekDay.setTextColor(isSelected ? Color.BLACK : Color.parseColor("#6E6E6E"));
 
         holder.itemView.setOnClickListener(v -> {
+            int currentPos = holder.getAdapterPosition();
+            if (currentPos == RecyclerView.NO_POSITION) return;
+
             int old = selectedPosition;
-            selectedPosition = position;
+            selectedPosition = currentPos;
 
             if (old != -1) notifyItemChanged(old);
-            notifyItemChanged(position);
+            notifyItemChanged(currentPos);
 
-            listener.onDateClick(date, position);
+            listener.onDateClick(dates.get(currentPos), currentPos);
         });
     }
 
