@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Дозировка и курс"
+        android:textStyle="bold"
+        android:textSize="18sp"/>
+
+    <EditText
+        android:id="@+id/etDoseValue"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Дозировка (например 500)"
+        android:inputType="numberDecimal"
+        android:layout_marginTop="12dp"/>
+
+    <Spinner
+        android:id="@+id/spDoseUnit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Длительность курса (дней)"
+        android:layout_marginTop="12dp"/>
+
+    <Spinner
+        android:id="@+id/spCourseDays"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"/>
+
+    <Button
+        android:id="@+id/btnSaveDose"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Готово"
+        android:layout_marginTop="16dp"/>
+</LinearLayout>

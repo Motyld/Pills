@@ -56,7 +56,7 @@ public class FormFragment extends Fragment {
         Button btnSave = v.findViewById(R.id.btnSaveMedicine);
 
         if (getArguments() != null) {
-            medicineName = getArguments().getString(ARG_MEDICINE_NAME);
+            medicineName = getArguments().getString(ARG_MEDICINE_NAME, "");
             tvSelectedDrug.setText(medicineName);
         }
 
@@ -78,31 +78,11 @@ public class FormFragment extends Fragment {
         scheduleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spSchedule.setAdapter(scheduleAdapter);
 
-        // Логируем выбор
-        spForm.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                Log.d("FormFragment", "✅ Выбрана форма: " + spForm.getSelectedItem());
-            }
-            @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-        });
-
-        spSchedule.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                Log.d("FormFragment", "✅ Выбрано расписание: " + spSchedule.getSelectedItem());
-            }
-            @Override
-            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
-        });
-
         btnSave.setOnClickListener(view -> saveReminder(tpStartTime, dpStartDate, spForm, spSchedule));
 
         return v;
     }
 
-    // ✅ ИСПРАВЛЕННЫЙ: правильное распределение по дням
     private void saveReminder(TimePicker tp, DatePicker dp, Spinner spForm, Spinner spSchedule) {
         int hour = tp.getHour();
         int minute = tp.getMinute();
@@ -111,16 +91,16 @@ public class FormFragment extends Fragment {
         int year = dp.getYear();
 
         String timeText = String.format("%02d:%02d", hour, minute);
-        String form = spForm.getSelectedItem().toString();
-        String schedule = spSchedule.getSelectedItem().toString();
+        String form = String.valueOf(spForm.getSelectedItem());
+        String schedule = String.valueOf(spSchedule.getSelectedItem());
 
         Log.d("FormFragment", "💊 Создание: " + medicineName + " | " + form + " | " + schedule);
 
-        // Проверяем/создаем лекарство
         long drugId = db.findDrugByName(medicineName);
-        if (drugId == -1) {
-            drugId = db.insertDrugIfMissing(medicineName);
-        }
+        if (drugId == -1) drugId = db.insertDrugIfMissing(medicineName);
+
+        // дозу можно пока брать из drugs.dosage (или оставить пусто)
+        String dose = ""; // или db.getDrugDosageByName(medicineName) если метод есть
 
         Calendar baseCal = Calendar.getInstance();
         baseCal.set(year, month, day, hour, minute, 0);
@@ -131,21 +111,21 @@ public class FormFragment extends Fragment {
 
         int reminderCount = 0;
 
-        // ✅ ЦИКЛ: сначала по ДНЯМ, потом по ПРИЕМАМ В ДЕНЬ
         for (int dayOffset = 0; dayOffset < totalDays; dayOffset++) {
             for (int occurrence = 0; occurrence < dailyOccurrences; occurrence++) {
                 Calendar cal = (Calendar) baseCal.clone();
 
-                // ✅ 1. ПЕРЕМЕЩАЕМ НА НОВЫЙ ДЕНЬ
+                // 1) сдвиг дня
                 cal.add(Calendar.DAY_OF_MONTH, dayOffset);
 
-                // ✅ 2. УСТАНАВЛИВАЕМ ВРЕМЯ для конкретного приема
+                // 2) распределяем приёмы в день (примерно равномерно)
                 int timesPerDay = dailyOccurrences;
                 int hourOffset = (24 / timesPerDay) * occurrence;
+
                 cal.set(Calendar.HOUR_OF_DAY, hour + hourOffset);
                 cal.set(Calendar.MINUTE, minute);
 
-                // ✅ 3. Корректируем переполнение времени
+                // 3) если перелезли за 24 часа — переносим на следующий день
                 if (cal.get(Calendar.HOUR_OF_DAY) >= 24) {
                     cal.add(Calendar.DAY_OF_MONTH, 1);
                     cal.set(Calendar.HOUR_OF_DAY, cal.get(Calendar.HOUR_OF_DAY) - 24);
@@ -154,28 +134,30 @@ public class FormFragment extends Fragment {
                 long timestamp = cal.getTimeInMillis();
                 String daySchedule = getDaysArray(schedule);
 
-                // ✅ 4. Создаем напоминание
-                long reminderId = db.insertReminder(
-                        drugId, timestamp, daySchedule, timeText, medicineName, form, schedule
+                // ✅ НОВОЕ: создаём СОБЫТИЕ (reminders)
+                long reminderId = db.insertReminderEvent(
+                        timestamp,
+                        timeText,
+                        daySchedule,
+                        schedule
                 );
 
-                // ✅ 5. Планируем уведомление
+                // ✅ добавляем лекарство внутрь (reminder_items)
+                db.addReminderItem(reminderId, drugId, dose);
+
+                // ✅ планируем уведомление
+                String displayTitle = medicineName + " (" + form + ") - " + schedule;
+
                 NotificationScheduler.scheduleOneTime(
                         requireContext(),
-                        medicineName + " (" + form + ") - " + schedule,
+                        medicineName,
+                        displayTitle,
                         timestamp,
                         reminderId
                 );
 
                 reminderCount++;
-                Log.d("FormFragment", String.format(
-                        "✅ #%d: %s | День %d | %02d.%02d %02d:%02d",
-                        reminderId, medicineName, dayOffset + 1,
-                        cal.get(Calendar.DAY_OF_MONTH),
-                        cal.get(Calendar.MONTH) + 1,
-                        cal.get(Calendar.HOUR_OF_DAY),
-                        cal.get(Calendar.MINUTE)
-                ));
+                Log.d("FormFragment", "✅ ID=" + reminderId + " " + displayTitle + " ts=" + timestamp);
             }
         }
 
@@ -183,9 +165,7 @@ public class FormFragment extends Fragment {
                 "✅ Создано " + reminderCount + " напоминаний для " + medicineName,
                 Toast.LENGTH_LONG).show();
 
-        // Broadcast + возврат
-        Intent refreshIntent = new Intent("com.example.pills.REFRESH_REMINDERS");
-        requireContext().sendBroadcast(refreshIntent);
+        requireContext().sendBroadcast(new Intent("com.example.pills.REFRESH_REMINDERS"));
         requireActivity().onBackPressed();
     }
 
@@ -212,7 +192,7 @@ public class FormFragment extends Fragment {
     }
 
     private String getDaysArray(String schedule) {
-        return "[1,2,3,4,5,6,7]"; // Каждый день недели
+        return "[1,2,3,4,5,6,7]";
     }
 
     @Override

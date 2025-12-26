@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private ArrayList<HistoryItem> list;
+    private final ArrayList<HistoryItem> list;
 
     public HistoryAdapter(ArrayList<HistoryItem> list) {
         this.list = list;
@@ -52,14 +52,15 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
 
         if (holder instanceof HeaderVH) {
             ((HeaderVH) holder).title.setText(item.title);
-
-        } else if (holder instanceof ItemVH) {
-            ItemVH vh = (ItemVH) holder;
-
-            vh.name.setText(item.name);
-            vh.time.setText(item.time);
-            vh.status.setText(item.status);
+            return;
         }
+
+        ItemVH vh = (ItemVH) holder;
+
+        vh.plannedTime.setText(item.plannedTime == null ? "" : item.plannedTime);
+        vh.actionTime.setText(item.actionTime == null ? "" : item.actionTime);
+        vh.status.setText(item.status == null ? "" : item.status);
+        vh.medicines.setText(item.medicines == null ? "" : item.medicines);
     }
 
     static class HeaderVH extends RecyclerView.ViewHolder {
@@ -71,12 +72,14 @@ public class HistoryAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
     }
 
     static class ItemVH extends RecyclerView.ViewHolder {
-        TextView name, time, status;
+        TextView plannedTime, actionTime, status, medicines;
+
         ItemVH(View itemView) {
             super(itemView);
-            name = itemView.findViewById(R.id.historyName);
-            time = itemView.findViewById(R.id.historyTime);
-            status = itemView.findViewById(R.id.historyStatus);
+            plannedTime = itemView.findViewById(R.id.historyPlannedTime);
+            actionTime  = itemView.findViewById(R.id.historyActionTime);
+            status      = itemView.findViewById(R.id.historyStatus);
+            medicines   = itemView.findViewById(R.id.historyMedicines);
         }
     }
 }

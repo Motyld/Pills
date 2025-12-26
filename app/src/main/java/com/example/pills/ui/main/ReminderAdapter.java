@@ -2,7 +2,7 @@ package com.example.pills.ui.main;
 
 import android.app.NotificationManager;
 import android.content.Context;
-import android.util.Log;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,17 +17,22 @@ import com.example.pills.db.DatabaseHelper;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHolder> {
 
-    private final List<Reminder> reminders;
+    public interface OnEditClickListener {
+        void onEdit(Reminder reminder);
+    }
 
-    public ReminderAdapter(List<Reminder> reminders) {
+    private final List<Reminder> reminders;
+    private final OnEditClickListener onEdit;
+
+    public ReminderAdapter(List<Reminder> reminders, OnEditClickListener onEdit) {
         this.reminders = reminders;
-        Log.d("ReminderAdapter", "🔧 Created with " + reminders.size() + " items");
+        this.onEdit = onEdit;
     }
 
     @NonNull
@@ -35,17 +40,15 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_reminder, parent, false);
-        Log.d("ReminderAdapter", "📱 ViewHolder created");
         return new ViewHolder(v);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Reminder reminder = reminders.get(position);
-        Log.d("ReminderAdapter", "🖥️ Bind pos=" + position + " ID=" + reminder.getId() + " " + reminder.getName());
 
         holder.tvTime.setText(reminder.getTime());
-        holder.tvName.setText(reminder.getName());
+        holder.tvName.setText(reminder.getName()); // ✅ тут теперь список лекарств
 
         holder.btnMore.setOnClickListener(v ->
                 showReminderMenu(holder.itemView.getContext(), reminder)
@@ -54,7 +57,6 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
 
     @Override
     public int getItemCount() {
-        Log.d("ReminderAdapter", "📊 getItemCount() = " + reminders.size());
         return reminders.size();
     }
 
@@ -64,7 +66,6 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
             reminders.remove(index);
             notifyItemRemoved(index);
             notifyItemRangeChanged(index, reminders.size());
-            Log.d("ReminderAdapter", "🗑️ Removed ID=" + r.getId() + " | left: " + reminders.size());
         }
     }
 
@@ -74,7 +75,7 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
 
         view.findViewById(R.id.actionAccept).setOnClickListener(v -> {
             updateStatus(ctx, reminder.getId(), "taken");
-            saveToHistory(ctx, reminder, "Принял");
+            saveToHistoryLikeNotification(ctx, reminder, "Принял");
             cancelNotification(ctx, reminder.getId());
             removeReminder(reminder);
             dialog.dismiss();
@@ -82,7 +83,7 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
 
         view.findViewById(R.id.actionSkip).setOnClickListener(v -> {
             updateStatus(ctx, reminder.getId(), "missed");
-            saveToHistory(ctx, reminder, "Пропустил");
+            saveToHistoryLikeNotification(ctx, reminder, "Пропустил");
             cancelNotification(ctx, reminder.getId());
             removeReminder(reminder);
             dialog.dismiss();
@@ -97,6 +98,7 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
 
         view.findViewById(R.id.actionEdit).setOnClickListener(v -> {
             dialog.dismiss();
+            if (onEdit != null) onEdit.onEdit(reminder);
         });
 
         view.findViewById(R.id.actionCancel).setOnClickListener(v -> dialog.dismiss());
@@ -108,48 +110,48 @@ public class ReminderAdapter extends RecyclerView.Adapter<ReminderAdapter.ViewHo
     private void updateStatus(Context ctx, long reminderId, String status) {
         DatabaseHelper db = new DatabaseHelper(ctx);
         db.updateReminderStatus(reminderId, status);
-        Log.d("ReminderAdapter", "✅ Status updated ID=" + reminderId + " → " + status);
+        db.close();
     }
 
-    private void saveToHistory(Context ctx, Reminder reminder, String status) {
+    // ✅ история как в уведомлении: (название таблетки) + время + Принял/Пропустил
+    // ✅ и если лекарств несколько — запишется несколько строк (по каждому item)
+    private void saveToHistoryLikeNotification(Context ctx, Reminder reminder, String statusRu) {
         DatabaseHelper db = new DatabaseHelper(ctx);
-        // ✅ ИСПРАВЛЕНО: Calendar.getInstance() вместо new Date()
-        Calendar cal = Calendar.getInstance();
-        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cal.getTime());
-        db.saveToHistory(reminder.getName(), reminder.getTime(), today, status);
-        Log.d("ReminderAdapter", "📝 History saved: " + today);
+
+        String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                .format(new Date(reminder.getTimestamp()));
+
+        db.saveReminderToHistory(reminder.getId(), reminder.getTime(), date, statusRu);
+        db.close();
     }
 
     private void cancelNotification(Context ctx, long reminderId) {
         NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
-        nm.cancel((int) reminderId);
+        if (nm != null) nm.cancel((int) (reminderId % Integer.MAX_VALUE));
     }
 
     private void deleteReminderForToday(Reminder reminder, Context ctx) {
+        // оставь как у тебя было — если нужно, я потом под multi-logic сделаю удаление
+        // (сейчас вы не просили менять удаление “только сегодня”)
         DatabaseHelper db = new DatabaseHelper(ctx);
-        long start = startOfDay(reminder.getTimestamp());
-        long end = endOfDay(reminder.getTimestamp());
+
+        long ts = reminder.getTimestamp();
+        java.util.Calendar cal = java.util.Calendar.getInstance();
+        cal.setTimeInMillis(ts);
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        cal.set(java.util.Calendar.MINUTE, 0);
+        cal.set(java.util.Calendar.SECOND, 0);
+        cal.set(java.util.Calendar.MILLISECOND, 0);
+        long start = cal.getTimeInMillis();
+
+        cal.set(java.util.Calendar.HOUR_OF_DAY, 23);
+        cal.set(java.util.Calendar.MINUTE, 59);
+        cal.set(java.util.Calendar.SECOND, 59);
+        cal.set(java.util.Calendar.MILLISECOND, 999);
+        long end = cal.getTimeInMillis();
+
         db.deleteReminderForDay(reminder.getId(), start, end);
-    }
-
-    private long startOfDay(long timestamp) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(timestamp);
-        cal.set(Calendar.HOUR_OF_DAY, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
-        return cal.getTimeInMillis();
-    }
-
-    private long endOfDay(long timestamp) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(timestamp);
-        cal.set(Calendar.HOUR_OF_DAY, 23);
-        cal.set(Calendar.MINUTE, 59);
-        cal.set(Calendar.SECOND, 59);
-        cal.set(Calendar.MILLISECOND, 999);
-        return cal.getTimeInMillis();
+        db.close();
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

@@ -5,10 +5,15 @@ public class HistoryItem {
     public static final int TYPE_ITEM = 1;
 
     public int type;
-    public String title;        // для заголовков
-    public String name;         // для элементов
-    public String time;         // для элементов
-    public String status;       // для элементов
+
+    // header
+    public String title;
+
+    // item
+    public String plannedTime;   // "План: 09:00"
+    public String actionTime;    // "Факт: 09:07"
+    public String status;        // "Принял"/"Пропустил"
+    public String medicines;     // список лекарств
 
     // Конструктор для ЗАГОЛОВКА
     public HistoryItem(String title) {
@@ -17,10 +22,11 @@ public class HistoryItem {
     }
 
     // Конструктор для ЭЛЕМЕНТА
-    public HistoryItem(String name, String time, String status) {
+    public HistoryItem(String plannedTime, String actionTime, String status, String medicines) {
         this.type = TYPE_ITEM;
-        this.name = name;
-        this.time = time;
+        this.plannedTime = plannedTime;
+        this.actionTime = actionTime;
         this.status = status;
+        this.medicines = medicines;
     }
 }

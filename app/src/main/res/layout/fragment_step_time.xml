@@ -1,0 +1,43 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Шаг 2/5: Время"
+        android:textStyle="bold"
+        android:textSize="18sp"/>
+
+    <TimePicker
+        android:id="@+id/tpStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:timePickerMode="spinner"
+        android:layout_marginTop="12dp"/>
+
+    <TextView
+        android:id="@+id/tvRepeatLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Повторять через (минут):"
+        android:layout_marginTop="12dp"
+        android:visibility="gone"/>
+
+    <EditText
+        android:id="@+id/etRepeatMinutes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Например 480 (8 часов)"
+        android:inputType="number"
+        android:visibility="gone"/>
+
+    <Button
+        android:id="@+id/btnNext"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Дальше"
+        android:layout_marginTop="16dp"/>
+</LinearLayout>

@@ -20,12 +20,22 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"/>
 
+    <TextView
+        android:id="@+id/tvForgot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Забыли пароль?"
+        android:textSize="14sp"
+        android:textColor="#1E88E5"
+        android:layout_marginTop="10dp"
+        android:padding="6dp"/>
+
     <Button
         android:id="@+id/btnLogin"
         android:text="Войти"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"/>
+        android:layout_marginTop="14dp"/>
 
     <Button
         android:id="@+id/btnGoRegister"

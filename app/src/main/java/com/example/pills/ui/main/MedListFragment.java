@@ -42,23 +42,34 @@ public class MedListFragment extends Fragment {
     }
 
     private void loadMedications() {
-
-        ArrayList<MedicationItem> list = new ArrayList<>();
+        ArrayList<String> list = new ArrayList<>();
 
         Cursor c = db.getReadableDatabase().rawQuery(
-                "SELECT id, name, dosage FROM drugs",
+                "SELECT name FROM drugs ORDER BY name ASC",
                 null
         );
 
         while (c.moveToNext()) {
-            list.add(new MedicationItem(
-                    c.getInt(0),
-                    c.getString(1),
-                    c.getString(2)
-            ));
+            list.add(c.getString(0));
         }
         c.close();
 
-        rvMeds.setAdapter(new MedicationAdapter(list));
+        MedicineAdapter adapter = new MedicineAdapter(list, name -> {
+            MedicineEditorFragment f = MedicineEditorFragment.newInstanceEditBack(name);
+
+            requireActivity().getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.container, f) // ✅ контейнер MainActivity
+                    .addToBackStack(null)
+                    .commit();
+        });
+
+        rvMeds.setAdapter(adapter);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (db != null) db.close();
     }
 }

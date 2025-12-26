@@ -18,7 +18,7 @@ import com.example.pills.ui.auth.LoginActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements NavigationHost{
 
     private FloatingActionButton fab;
 
@@ -84,10 +84,10 @@ public class MainActivity extends AppCompatActivity {
 
         if (intent.getBooleanExtra("REFRESH_LIST", false)) {
             Log.d("MainActivity", "🚀 REFRESH SIGNAL from Popup!");
-            TodayFragment todayFragment = (TodayFragment) getSupportFragmentManager()
-                    .findFragmentById(R.id.container);
-            if (todayFragment != null && todayFragment.isVisible()) {
-                todayFragment.refreshCurrentList();
+
+            Fragment f = getSupportFragmentManager().findFragmentById(R.id.container);
+            if (f instanceof TodayFragment) {
+                ((TodayFragment) f).refreshCurrentList();
                 Log.d("MainActivity", "✅ TodayFragment refreshed!");
             }
         }
@@ -98,10 +98,9 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         Log.d("MainActivity", "=== onResume() ===");
 
-        TodayFragment todayFragment = (TodayFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.container);
-        if (todayFragment != null && todayFragment.isVisible()) {
-            todayFragment.refreshCurrentList();
+        Fragment f = getSupportFragmentManager().findFragmentById(R.id.container);
+        if (f instanceof TodayFragment) {
+            ((TodayFragment) f).refreshCurrentList();
         }
     }
 
@@ -153,5 +152,13 @@ public class MainActivity extends AppCompatActivity {
                     getSystemService(android.app.NotificationManager.class);
             manager.createNotificationChannel(channel);
         }
+    }
+    @Override
+    public void openFragment(Fragment fragment) {
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.container, fragment)   // главный контейнер MainActivity
+                .addToBackStack(null)
+                .commit();
     }
 }

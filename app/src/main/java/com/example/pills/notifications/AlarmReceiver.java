@@ -23,22 +23,25 @@ public class AlarmReceiver extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
 
         long reminderId = intent.getLongExtra("reminderId", -1);
-        String title = intent.getStringExtra("title");
         long timestamp = intent.getLongExtra("timestamp", 0);
-
-        // Получаем дозу сразу
-        DatabaseHelper db = new DatabaseHelper(context);
-        String dose = db.getDrugDosageByName(title);
 
         int notificationId = (int) (reminderId % Integer.MAX_VALUE);
 
         createChannel(context);
 
+        // ✅ Получаем список лекарств + дозы из БД
+        DatabaseHelper db = new DatabaseHelper(context);
+        String itemsText = db.getReminderItemsText(reminderId);
+        db.close();
+
+        if (itemsText == null || itemsText.trim().isEmpty()) {
+            itemsText = "Лекарства не указаны";
+        }
+
+        // Открытие попапа
         Intent popupIntent = new Intent(context, ReminderPopupActivity.class);
         popupIntent.putExtra("reminderId", reminderId);
-        popupIntent.putExtra("title", title);
         popupIntent.putExtra("timestamp", timestamp);
-        popupIntent.putExtra("dose", dose);  // передаем дозу
         popupIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent pi = PendingIntent.getActivity(
@@ -48,10 +51,12 @@ public class AlarmReceiver extends BroadcastReceiver {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
+        // ✅ Уведомление (большое)
         Notification notification = new NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_pill)
-                .setContentTitle(title)
-                .setContentText("Приём лекарства")
+                .setContentTitle("Пора принять лекарства")
+                .setContentText(itemsText.split("\n")[0]) // первая строка как превью
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(itemsText))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_ALARM)
                 .setContentIntent(pi)
@@ -64,6 +69,9 @@ public class AlarmReceiver extends BroadcastReceiver {
         if (nm != null) {
             nm.notify(notificationId, notification);
         }
+
+        // ✅ сразу открываем большое окно (как ты хотел)
+        context.startActivity(popupIntent);
     }
 
     private void createChannel(Context context) {
@@ -72,7 +80,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         NotificationManager nm =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
-        if (nm.getNotificationChannel(CHANNEL_ID) != null) return;
+        if (nm != null && nm.getNotificationChannel(CHANNEL_ID) != null) return;
 
         NotificationChannel ch = new NotificationChannel(
                 CHANNEL_ID,
@@ -80,6 +88,7 @@ public class AlarmReceiver extends BroadcastReceiver {
                 NotificationManager.IMPORTANCE_HIGH
         );
         ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
-        nm.createNotificationChannel(ch);
+
+        if (nm != null) nm.createNotificationChannel(ch);
     }
 }

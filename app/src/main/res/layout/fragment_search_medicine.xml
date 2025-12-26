@@ -1,17 +1,22 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <EditText
-        android:id="@+id/etSearch"
+    <AutoCompleteTextView
+        android:id="@+id/actMedicine"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Поиск лекарства"/>
+        android:hint="Выберите лекарство"
+        android:inputType="text"
+        android:padding="12dp"/>
 
-    <ListView
-        android:id="@+id/lvResults"
+    <Button
+        android:id="@+id/btnAddMedicine"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="8dp"/>
+        android:layout_height="wrap_content"
+        android:text="Добавить лекарственное средство"
+        android:layout_marginTop="10dp"
+        android:visibility="gone"/>
 </LinearLayout>

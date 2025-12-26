@@ -87,7 +87,6 @@ public class TodayFragment extends Fragment {
                 filter,
                 ContextCompat.RECEIVER_NOT_EXPORTED
         );
-
         Log.d("TodayFragment", "✅ BroadcastReceiver registered");
     }
 
@@ -97,36 +96,23 @@ public class TodayFragment extends Fragment {
         if (refreshReceiver != null) {
             try {
                 requireActivity().unregisterReceiver(refreshReceiver);
-                Log.d("TodayFragment", "✅ BroadcastReceiver unregistered");
-            } catch (Exception e) {
-                Log.d("TodayFragment", "Receiver already unregistered");
-            }
+            } catch (Exception ignored) {}
         }
-        if (db != null) {
-            db.close();
-        }
+        if (db != null) db.close();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        Log.d("TodayFragment", "=== onResume() - FULL REFRESH ===");
         refreshCurrentList();
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        Log.d("TodayFragment", "onActivityResult called");
         if (requestCode == REQUEST_REMINDER && resultCode == Activity.RESULT_OK) {
             refreshCurrentList();
         }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     private void requestNotificationPermission() {
@@ -174,66 +160,42 @@ public class TodayFragment extends Fragment {
     }
 
     public void refreshCurrentList() {
-        Log.d("TodayFragment", "🔄 refreshCurrentList() - RELOADING DATA");
-        if (selectedDate != null) {
-            loadRemindersForDate(selectedDate);
-        }
+        if (selectedDate != null) loadRemindersForDate(selectedDate);
     }
 
-    // ✅ КЛЮЧЕВОЙ МЕТОД: показывает ТОЛЬКО активные напоминания (status = 'none' или null)
+    // ✅ ВАЖНО: теперь грузим сгруппировано (одно время -> список лекарств)
     public void loadRemindersForDate(Date date) {
         ArrayList<Reminder> list = new ArrayList<>();
 
         long start = startOfDay(date);
         long end = endOfDay(date);
 
-        Log.d("TodayFragment", "🔍 Loading '" + formatTitle(date) + "' (start=" + start + ", end=" + end + ")");
+        Cursor c = db.getTodaysGroupedReminders(start, end);
+        if (c != null) {
+            while (c.moveToNext()) {
+                long reminderId = c.getLong(0);
+                String time = c.getString(1);
+                long ts = c.getLong(2);
+                String items = c.getString(3); // много строк
 
-        // ✅ LEFT JOIN для надежности + фильтр по статусу
-        String sqlAll =
-                "SELECT reminders.id, reminders.time, COALESCE(reminders.drug_name, drugs.name) as drug_name, " +
-                        "reminders.timestamp, reminders.status " +
-                        "FROM reminders " +
-                        "LEFT JOIN drugs ON drugs.id = reminders.drug_id " +
-                        "WHERE reminders.timestamp BETWEEN ? AND ? " +
-                        "ORDER BY reminders.time ASC";
+                if (items == null) items = "";
 
-        Cursor cAll = db.getReadableDatabase().rawQuery(
-                sqlAll,
-                new String[]{String.valueOf(start), String.valueOf(end)}
-        );
-
-        Log.d("TodayFragment", "📊 TOTAL records found: " + cAll.getCount());
-
-        int shown = 0;
-        while (cAll.moveToNext()) {
-            long id = cAll.getLong(0);
-            String time = cAll.getString(1);
-            String name = cAll.getString(2);
-            long ts = cAll.getLong(3);
-            String status = cAll.getString(4);
-
-            String statusStr = (status == null) ? "NULL" : status;
-            Log.d("TodayFragment",
-                    "  🎯 ID=" + id + " | " + time + " | " + name + " | STATUS='" + statusStr + "'");
-
-            // ✅ ТОЛЬКО статус 'none' или null = показываем
-            if ("none".equals(status) || status == null) {
-                list.add(new Reminder(id, time, name, ts));
-                shown++;
-                Log.d("TodayFragment", "   ✅ ДОБАВЛЕНО В СПИСОК (" + shown + ")");
-            } else {
-                Log.d("TodayFragment", "   ❌ СТАТУС '" + statusStr + "' - ПРОПУЩЕНО");
+                // ⚠️ Мы используем старый класс Reminder как контейнер:
+                // name = items (список лекарств)
+                list.add(new Reminder(reminderId, time, items, ts));
             }
+            c.close();
         }
-        cAll.close();
 
-        Log.d("TodayFragment", "✅ FINAL RESULT: " + shown + " активных напоминаний");
+        todayAdapter = new ReminderAdapter(list, reminder -> {
+            long reminderId = reminder.getId();
 
-        // ✅ ПЕРЕСОЗДАЕМ АДАПТЕР КАЖДЫЙ РАЗ - гарантированное обновление
-        todayAdapter = new ReminderAdapter(list);
+            Intent i = new Intent(requireContext(), AddMedicationActivity.class);
+            i.putExtra(AddMedicationActivity.EXTRA_EDIT_REMINDER_ID, reminderId);
+            startActivity(i);
+        });
+
         rvToday.setAdapter(todayAdapter);
-        rvToday.invalidate();
     }
 
     private long startOfDay(Date d) {

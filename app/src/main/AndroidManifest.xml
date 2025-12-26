@@ -39,17 +39,14 @@
         <activity android:name=".ui.auth.RegisterActivity"/>
         <activity android:name=".ui.main.MainActivity"/>
         <activity android:name=".ui.main.AddMedicationActivity"/>
+        <activity android:name=".ui.auth.ForgotPasswordActivity" />
 
-        <!-- Popup окно -->
+
         <activity
             android:name=".ui.popup.ReminderPopupActivity"
-            android:theme="@style/Theme.AppCompat.Dialog"
-            android:windowSoftInputMode="stateHidden"
-            android:excludeFromRecents="true"
-            android:noHistory="true"
-            android:launchMode="singleTask"
-            android:finishOnTaskLaunch="true"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.Pills.Popup"
+            android:launchMode="singleTask" />
 
 
 

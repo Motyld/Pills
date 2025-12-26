@@ -21,16 +21,13 @@ public class BootReceiver extends BroadcastReceiver {
         DatabaseHelper dbHelper = new DatabaseHelper(context);
         SQLiteDatabase db = dbHelper.getReadableDatabase();
 
-        /*
-         * Берём ТОЛЬКО:
-         *  - pending
-         *  - с timestamp в будущем
-         */
+        // ✅ восстанавливаем только будущие активные напоминания
         Cursor cursor = db.rawQuery(
-                "SELECT r.id, r.timestamp, d.name " +
+                "SELECT r.id, r.timestamp, COALESCE(r.drug_name, d.name) AS drugName, " +
+                        "r.form, r.schedule " +
                         "FROM reminders r " +
-                        "JOIN drugs d ON d.id = r.drug_id " +
-                        "WHERE r.status = 'pending' AND r.timestamp > ?",
+                        "LEFT JOIN drugs d ON d.id = r.drug_id " +
+                        "WHERE (r.status = 'none' OR r.status IS NULL) AND r.timestamp > ?",
                 new String[]{String.valueOf(System.currentTimeMillis())}
         );
 
@@ -41,17 +38,28 @@ public class BootReceiver extends BroadcastReceiver {
             long timestamp = cursor.getLong(1);
             String drugName = cursor.getString(2);
 
+            String form = cursor.getString(3);
+            String schedule = cursor.getString(4);
+
+            // ✅ что показываем пользователю
+            String displayTitle = drugName;
+            if (form != null && !form.trim().isEmpty()) {
+                displayTitle += " (" + form + ")";
+            }
+            if (schedule != null && !schedule.trim().isEmpty()) {
+                displayTitle += " - " + schedule;
+            }
+
             NotificationScheduler.scheduleOneTime(
                     context,
                     drugName,
+                    displayTitle,
                     timestamp,
                     reminderId
             );
 
             restored++;
-            Log.d("BootReceiver",
-                    "✅ Restored alarm ID=" + reminderId +
-                            " at " + timestamp);
+            Log.d("BootReceiver", "✅ Restored alarm ID=" + reminderId + " at " + timestamp);
         }
 
         cursor.close();

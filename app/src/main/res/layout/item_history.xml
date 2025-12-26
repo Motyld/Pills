@@ -8,31 +8,41 @@
     android:layout_marginBottom="10dp"
     android:elevation="4dp">
 
+    <!-- Плановое время -->
     <TextView
-        android:id="@+id/historyName"
-        android:text="Aspirin"
+        android:id="@+id/historyPlannedTime"
+        android:text="План: 08:30"
         android:textStyle="bold"
-        android:textSize="18sp"
+        android:textSize="16sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
+    <!-- Время фактического нажатия -->
     <TextView
-        android:id="@+id/historyTime"
-        android:text="08:30"
+        android:id="@+id/historyActionTime"
+        android:text="Факт: 08:35"
         android:textSize="14sp"
         android:layout_marginTop="4dp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
 
-    <!-- В item_history.xml -->
+    <!-- Статус -->
     <TextView
         android:id="@+id/historyStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:text="Принял"
         android:textSize="14sp"
-        android:textColor="@android:color/holo_green_dark" />
+        android:layout_marginTop="4dp"
+        android:textColor="@android:color/holo_green_dark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
 
-
-
+    <!-- Список лекарств -->
+    <TextView
+        android:id="@+id/historyMedicines"
+        android:text="• Парацетамол — 1 таб\n• Витамин C — 500 мг"
+        android:textSize="14sp"
+        android:layout_marginTop="8dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
 
 </LinearLayout>

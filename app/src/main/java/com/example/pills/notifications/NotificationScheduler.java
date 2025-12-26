@@ -7,22 +7,38 @@ import android.content.Intent;
 import android.os.Build;
 import android.util.Log;
 
-import com.example.pills.db.DatabaseHelper;
-
 public class NotificationScheduler {
 
+    // ✅ НОВАЯ (твоя) — оставляем
+    public static void scheduleOneTime(
+            Context context,
+            String drugName,
+            String displayTitle,
+            long triggerTimestamp,
+            long reminderId
+    ) {
+        scheduleInternal(context, triggerTimestamp, reminderId);
+    }
+
+    // ✅ СТАРАЯ (чтобы не ломалось): Context, title, ts, id
     public static void scheduleOneTime(
             Context context,
             String title,
             long triggerTimestamp,
             long reminderId
     ) {
+        scheduleInternal(context, triggerTimestamp, reminderId);
+    }
+
+    // ✅ Общая реализация: нам реально нужен только reminderId + timestamp
+    private static void scheduleInternal(Context context, long triggerTimestamp, long reminderId) {
+
         AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (am == null) return;
 
         int requestCode = (int) (reminderId % Integer.MAX_VALUE);
 
-        // ❗ Отменяем старый
+        // отменяем старый
         Intent cancelIntent = new Intent(context, AlarmReceiver.class);
         PendingIntent cancelPi = PendingIntent.getBroadcast(
                 context,
@@ -30,22 +46,15 @@ public class NotificationScheduler {
                 cancelIntent,
                 PendingIntent.FLAG_NO_CREATE | PendingIntent.FLAG_IMMUTABLE
         );
-
         if (cancelPi != null) {
             am.cancel(cancelPi);
             cancelPi.cancel();
             Log.d("Scheduler", "🛑 Old alarm cancelled ID=" + reminderId);
         }
 
-        // Получаем дозу сразу из базы
-        DatabaseHelper db = new DatabaseHelper(context);
-        String dose = db.getDrugDosageByName(title);
-
         Intent intent = new Intent(context, AlarmReceiver.class);
-        intent.putExtra("title", title);
         intent.putExtra("reminderId", reminderId);
         intent.putExtra("timestamp", triggerTimestamp);
-        intent.putExtra("dose", dose); // передаем дозу
 
         PendingIntent pi = PendingIntent.getBroadcast(
                 context,
@@ -60,17 +69,9 @@ public class NotificationScheduler {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            am.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerTimestamp,
-                    pi
-            );
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTimestamp, pi);
         } else {
-            am.setExact(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerTimestamp,
-                    pi
-            );
+            am.setExact(AlarmManager.RTC_WAKEUP, triggerTimestamp, pi);
         }
 
         Log.d("Scheduler", "✅ Alarm scheduled ID=" + reminderId + " ts=" + triggerTimestamp);

@@ -1,37 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="24dp"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent"
+    android:background="#88000000"
+    android:padding="18dp">
 
-    <TextView
-        android:id="@+id/tvTitle"
-        android:text="Название лекарства"
-        android:textSize="18sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <TextView
-        android:id="@+id/tvTime"
-        android:text="Время"
-        android:textSize="16sp"
-        android:layout_marginTop="8dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <Button
-        android:id="@+id/btnAccept"
-        android:text="Принял"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp" />
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:background="@android:color/white"
+        android:padding="18dp">
 
-    <Button
-        android:id="@+id/btnSkip"
-        android:text="Пропустил"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp" />
+        <TextView
+            android:id="@+id/tvTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="12:30"
+            android:textSize="36sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingBottom="10dp" />
 
-</LinearLayout>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Лекарства:"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:paddingBottom="6dp" />
+
+        <TextView
+            android:id="@+id/tvItems"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• Парацетамол — 500мг\n• Ибупрофен — 200мг"
+            android:textSize="16sp"
+            android:lineSpacingExtra="4dp"
+            android:paddingBottom="14dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnAccept"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Принял" />
+
+            <Button
+                android:id="@+id/btnSkip"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Пропустил" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSnooze"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="Отложить на 5 минут" />
+
+    </LinearLayout>
+
+</FrameLayout>

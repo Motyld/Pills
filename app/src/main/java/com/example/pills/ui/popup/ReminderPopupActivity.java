@@ -5,22 +5,24 @@ import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.pills.R;
 import com.example.pills.db.DatabaseHelper;
 import com.example.pills.notifications.AlarmReceiver;
-import com.example.pills.ui.main.MainActivity;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
 public class ReminderPopupActivity extends Activity {
 
     private long reminderId;
-    private String title;
+    private long timestamp;
     private String timeText;
 
     @Override
@@ -29,42 +31,106 @@ public class ReminderPopupActivity extends Activity {
         setContentView(R.layout.activity_reminder_popup);
 
         reminderId = getIntent().getLongExtra("reminderId", -1);
-        title = getIntent().getStringExtra("title");
-        long timestamp = getIntent().getLongExtra("timestamp", 0);
+        timestamp = getIntent().getLongExtra("timestamp", 0);
 
-        // Форматируем время
-        Date date = new Date(timestamp);
-        timeText = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(date);
+        timeText = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(timestamp));
 
-        // Устанавливаем текст в попапе
-        TextView tvTitle = findViewById(R.id.tvTitle);
         TextView tvTime = findViewById(R.id.tvTime);
+        TextView tvItems = findViewById(R.id.tvItems);
 
-        tvTitle.setText(title);
-        tvTime.setText("Время: " + timeText);
+        Button btnAccept = findViewById(R.id.btnAccept);
+        Button btnSkip = findViewById(R.id.btnSkip);
+        Button btnSnooze = findViewById(R.id.btnSnooze);
 
-        findViewById(R.id.btnAccept).setOnClickListener(v -> action("taken"));
-        findViewById(R.id.btnSkip).setOnClickListener(v -> action("missed"));
+        tvTime.setText(timeText);
+
+        // ✅ список лекарств + дозировки берём из БД
+        DatabaseHelper db = new DatabaseHelper(this);
+        String itemsText = db.getReminderItemsText(reminderId);
+        db.close();
+
+        if (itemsText == null || itemsText.trim().isEmpty()) {
+            itemsText = "Нет лекарств";
+        }
+
+        tvItems.setText(itemsText);
+
+        btnAccept.setOnClickListener(v -> finishWithStatus("taken", "Принял"));
+        btnSkip.setOnClickListener(v -> finishWithStatus("missed", "Пропустил"));
+        btnSnooze.setOnClickListener(v -> snooze5Minutes());
     }
 
-    private void action(String status) {
+    private void finishWithStatus(String statusDb, String statusHistoryRu) {
         DatabaseHelper db = new DatabaseHelper(this);
 
-        // Обновляем статус
-        db.updateReminderStatus(reminderId, status);
+        db.updateReminderStatus(reminderId, statusDb);
 
-        // Сохраняем в историю
-        db.saveToHistory(title, timeText,
-                new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date()),
-                status);
+        String date = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                .format(new Date(timestamp));
 
-        cancelAlarm();
-        cancelNotification();
-        notifyMain();
+        // ✅ как в уведомлении: по каждому лекарству
+        db.saveReminderToHistory(reminderId, timeText, date, statusHistoryRu);
+
+        db.close();
+
+        cancelAlarm(reminderId);
+        cancelNotification(reminderId);
+
+        sendBroadcast(new Intent("com.example.pills.REFRESH_REMINDERS"));
         finish();
     }
 
-    private void cancelAlarm() {
+    // ✅ Отложить на 5 минут
+    private void snooze5Minutes() {
+        long newTs = System.currentTimeMillis() + 5 * 60 * 1000L;
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(newTs);
+
+        String newTimeText = String.format(Locale.getDefault(),
+                "%02d:%02d", cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE));
+
+        DatabaseHelper db = new DatabaseHelper(this);
+        db.updateReminderTime(reminderId, newTs, newTimeText);
+        db.close();
+
+        scheduleAlarmAgain(reminderId, newTs);
+
+        cancelNotification(reminderId);
+        sendBroadcast(new Intent("com.example.pills.REFRESH_REMINDERS"));
+
+        finish();
+    }
+
+    private void scheduleAlarmAgain(long reminderId, long newTs) {
+        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+        if (am == null) return;
+
+        int requestCode = (int) (reminderId % Integer.MAX_VALUE);
+
+        Intent i = new Intent(this, AlarmReceiver.class);
+        i.putExtra("reminderId", reminderId);
+        i.putExtra("timestamp", newTs);
+
+        PendingIntent pi = PendingIntent.getBroadcast(
+                this,
+                requestCode,
+                i,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        am.cancel(pi);
+
+        if (newTs <= System.currentTimeMillis()) return;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, newTs, pi);
+        } else {
+            am.setExact(AlarmManager.RTC_WAKEUP, newTs, pi);
+        }
+    }
+
+    private void cancelAlarm(long reminderId) {
         int requestCode = (int) (reminderId % Integer.MAX_VALUE);
 
         Intent i = new Intent(this, AlarmReceiver.class);
@@ -77,20 +143,13 @@ public class ReminderPopupActivity extends Activity {
 
         if (pi != null) {
             AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
-            am.cancel(pi);
+            if (am != null) am.cancel(pi);
             pi.cancel();
         }
     }
 
-    private void cancelNotification() {
-        NotificationManager nm =
-                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        nm.cancel((int) (reminderId % Integer.MAX_VALUE));
-    }
-
-    private void notifyMain() {
-        Intent i = new Intent(this, MainActivity.class);
-        i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(i);
+    private void cancelNotification(long reminderId) {
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) nm.cancel((int) (reminderId % Integer.MAX_VALUE));
     }
 }
